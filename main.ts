@@ -56,13 +56,10 @@ namespace CMatch {
         PointB,
         DisallowA,
         DisallowB,
-        ObstructA,
-        ObstructB,
         WinnerA,
         WinnerB,
         DisqualA,
-        DisqualB,
-        Reset
+        DisqualB
     }
 
     radio.onReceivedNumber(function (cmd: number) {
