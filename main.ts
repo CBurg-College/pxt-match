@@ -62,8 +62,8 @@ function setMatchHandling(programmableCode: () => void): void {
 }
 
 basic.forever(function() {
-    if (inactive()) return
     RESTART = false
+    if (inactive()) return
     if (playHandler) playHandler()
 })
 
@@ -96,8 +96,8 @@ function clearPause() {
     PAUSE = false
 }
 
-function restart() {
-    RESTART = true
+function isRestarting() :boolean {
+    return RESTART
 }
 
 radio.onReceivedNumber(function (match: number) {
