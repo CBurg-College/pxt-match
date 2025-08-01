@@ -40,6 +40,7 @@ enum Match {
 }
 
 let MATCH = Match.Stop
+let PLAYING = false
 let PAUSE = false
 
 let matchHandler: handler   // handling match events
@@ -50,7 +51,7 @@ function setMatchHandling(programmableCode: () => void): void {
 }
 
 function playerProgram() {
-    while (MATCH != Match.Stop) {
+    while (PLAYING) {
         if (PAUSE) continue
         if (playerHandler) playerHandler()
         basic.pause(1)
