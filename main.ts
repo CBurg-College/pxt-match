@@ -87,6 +87,7 @@ function stopPlaying() {
 }
 
 function setPause() {
+    RESTART = true
     PAUSE = true
     if (stopHandler) stopHandler()
 }
