@@ -50,13 +50,10 @@ function setMatchHandling(programmableCode: () => void): void {
     matchHandler = programmableCode;
 }
 
-function playerProgram() {
-    while (PLAYING) {
-        if (PAUSE) continue
-        if (playerHandler) playerHandler()
-        basic.pause(1)
-    }
-}
+basic.forever(function() {
+    if (PLAYING && !PAUSE && playerHandler)
+        playerHandler()
+})
 
 function setPause() {
     PAUSE = true
@@ -68,10 +65,7 @@ function clearPause() {
 
 radio.onReceivedNumber(function (match: number) {
     MATCH = match
-    if (MATCH == Match.Start) {
-         PLAYING = true
-         playerProgram()
-    }
+    if (MATCH == Match.Start) PLAYING = true
     if (MATCH == Match.Stop) PLAYING = false
     if (matchHandler) matchHandler()
 })
