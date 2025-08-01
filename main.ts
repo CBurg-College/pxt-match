@@ -28,7 +28,6 @@
 
 enum Match {
     Stop,
-    Pause,
     Start,
     PointA,
     PointB,
@@ -41,6 +40,7 @@ enum Match {
 }
 
 let MATCH = Match.Stop
+let PAUSE = false
 
 let matchHandler: handler   // handling match events
 let playerHandler: handler  // handling player program
@@ -51,10 +51,18 @@ function setMatchHandling(programmableCode: () => void): void {
 
 function playerProgram() {
     while (MATCH != Match.Stop) {
-        if (MATCH == Match.Pause) continue
+        if (PAUSE) continue
         if (playerHandler) playerHandler()
         basic.pause(1)
     }
+}
+
+function setPause() {
+    PAUSE = true
+}
+
+function clearPause() {
+    PAUSE = false
 }
 
 radio.onReceivedNumber(function (match: number) {
