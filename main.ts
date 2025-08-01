@@ -61,16 +61,30 @@ function setMatchHandling(programmableCode: () => void): void {
 }
 
 basic.forever(function() {
-    if (notPlaying()) return
+    if (inactive()) return
     if (playHandler) playHandler()
 })
 
-function notPlaying() : boolean {
+function active() : boolean {
+    return (!PAUSE && PLAYING)
+}
+
+function inactive() : boolean {
     return (PAUSE || !PLAYING)
+}
+
+function startPlaying() {
+    PLAYING = true
+}
+
+function stopPlaying() {
+    PLAYING = false
+    if (stopHandler) stopHandler()
 }
 
 function setPause() {
     PAUSE = true
+    if (stopHandler) stopHandler()
 }
 
 function clearPause() {
