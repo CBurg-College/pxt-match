@@ -90,6 +90,7 @@ function setPause() {
     RESTART = true
     PAUSE = true
     if (stopHandler) stopHandler()
+    while (RESTART) basic.pause(1)
 }
 
 function clearPause() {
