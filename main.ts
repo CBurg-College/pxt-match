@@ -68,5 +68,7 @@ function clearPause() {
 
 radio.onReceivedNumber(function (match: number) {
     MATCH = match
+    if (MATCH == Match.Start) PLAYING = true
+    if (MATCH == Match.Stop) PLAYING = false
     if (matchHandler) matchHandler()
 })
