@@ -68,16 +68,17 @@ basic.forever(function() {
 })
 
 function active() : boolean {
-    return (!PAUSE && PLAYING)
+    return (PLAYING && !PAUSE && !RESTART)
 }
 
 function inactive() : boolean {
-    return (PAUSE || !PLAYING)
+    return (!PLAYING || PAUSE || RESTART)
 }
 
 function startPlaying() {
     PLAYING = true
     PAUSE = false
+    RESTART = false
 }
 
 function stopPlaying() {
