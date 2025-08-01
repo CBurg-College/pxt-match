@@ -16,13 +16,22 @@
  * 
  * Additionally, the depending player extensions
  * (e.g. pxt-soccer-player) should implement a function
- * that allows to create code for the 'playerHandler',
+ * that allows to create code for the 'playHandler',
  * e.g.:        //% color="#FFCC00"
  *              //% block="when playing"
  *              //% block.loc.nl="gedurende het spel"
- *              export function onEventOutsideField(
+ *              export function onEventStart(
  *                                  programmableCode: () => void): void {
- *                  playerHandler = programmableCode;
+ *                  playHandler = programmableCode;
+ *              }
+ * 
+ * and that allows to create code for the 'stopHandler'
+ * e.g.:        //% color="#FFCC00"
+ *              //% block="when stopping"
+ *              //% block.loc.nl="om te stoppen"
+ *              export function onEventStop(
+ *                                  programmableCode: () => void): void {
+ *                  stopHandler = programmableCode;
  *              }
  */
 
@@ -44,16 +53,21 @@ let PLAYING = false
 let PAUSE = false
 
 let matchHandler: handler   // handling match events
-let playerHandler: handler  // handling player program
+let playHandler: handler    // handling the play function
+let stopHandler: handler    // handling the stop function
 
 function setMatchHandling(programmableCode: () => void): void {
     matchHandler = programmableCode;
 }
 
 basic.forever(function() {
-    if (PLAYING && !PAUSE && playerHandler)
-        playerHandler()
+    if (notPlaying()) return
+    if (playHandler) playHandler()
 })
+
+function notPlaying() : boolean {
+    return (PAUSE || !PLAYING)
+}
 
 function setPause() {
     PAUSE = true
@@ -65,7 +79,16 @@ function clearPause() {
 
 radio.onReceivedNumber(function (match: number) {
     MATCH = match
-    if (MATCH == Match.Start) PLAYING = true
-    if (MATCH == Match.Stop) PLAYING = false
+    switch (MATCH) {
+        case Match.Start:       PLAYING = true; break;
+        case Match.Stop:
+        case Match.WinnerA:
+        case Match.WinnerB:
+        case Match.DisqualA:
+        case Match.DisqualB:    PLAYING = false;
+                                PAUSE = false;
+                                if (stopHandler) stopHandler()
+                                break;
+    }
     if (matchHandler) matchHandler()
 })
