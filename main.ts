@@ -62,7 +62,6 @@ let disqualHandler: handler
 // game state machine
 //
 basic.forever(function() {
-    basic.showNumber(MATCH)
     switch (MATCH) {
         case Match.Play:
             if (playHandler) {
@@ -134,4 +133,5 @@ function inactive() : boolean {
 
 radio.onReceivedNumber(function (match: number) {
     MATCH = match
+    basic.showNumber(MATCH)
 })
