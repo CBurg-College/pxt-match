@@ -1,118 +1,136 @@
 /* This is a basic extension for robot matches.
- * The robot-players and arbiter must include it
- * to be able to send and respond to 'Match'-messages.
+ * The robot-players, goals and arbiter must include
+ * it to be able to send and respond to 'Match'-messages.
  * 
- * In the current extension the radio event handler
- * 'onReceivedNumber' stores the message in variable
- * 'MATCH' and then calls a 'matchHandler' of which
- * the code should be registered by the depending
- * arbiter and player extensions through calling
- * 'setMatchHandling' as follows:
- *              setMatchHandling(() => {
- *                  ... handling code ...
- *              })
- * The handling code should respond to the message
- * stored in the variable MATCH.
+ * The radio event handler 'onReceivedNumber' stores
+ * the messages in variable 'MATCH'. This variable is
+ * repeatedly (forever) handled in a state machine.
+ * According to the value in variable MATCH, the state
+ * machine calls handlers that must be registered by the
+ * extensions which are based on the pxt-match extension.
+ * For example, registering goes like:
+ *   //% block="when playing do"
+ *   export function onPlay(code: () => void) : void   {
+ *       playHandler = code;
+ *   }
+ * Of course, a handler needs to be registered only
+ * when applicable. An arbiter does not need to
+ * register the playHandler.
  * 
- * Additionally, the depending player extensions
- * (e.g. pxt-soccer-player) should implement a function
- * that allows to create code for the 'playHandler',
- * e.g.:        //% color="#FFCC00"
- *              //% block="when playing"
- *              //% block.loc.nl="gedurende het spel"
- *              export function onEventStart(
- *                                  programmableCode: () => void): void {
- *                  playHandler = programmableCode;
- *              }
- * 
- * and that allows to create code for the 'stopHandler'
- * e.g.:        //% color="#FFCC00"
- *              //% block="when stopping"
- *              //% block.loc.nl="om te stoppen"
- *              export function onEventStop(
- *                                  programmableCode: () => void): void {
- *                  stopHandler = programmableCode;
- *              }
+ * IMPORTANT NOTE:
+ * Extensions that are based in the pxt-match extension
+ * should have the following line of code as the first
+ * line of EACH loop:
+ *   if (MATCH != Match.Play) return;
+ * This ensures a quick response to the messages.
  */
+
+enum Role {
+    Arbiter,
+    PlayerYellow,
+    PlayerBlue,
+    GoalYellow,
+    GoalBlue
+}
 
 enum Match {
     Stop,
-    Start,
-    PointA,
-    PointB,
-    DisallowA,
-    DisallowB,
-    WinnerA,
-    WinnerB,
-    DisqualA,
-    DisqualB
+    Play,
+    PointYellow,
+    PointBlue,
+    DisallowYellow,
+    DisallowBlue,
+    WinnerYellow,
+    WinnerBlue,
+    DisqualYellow,
+    DisqualBlue
 }
 
-let MATCH = Match.Stop
-let PLAYING = false
-let PAUSE = false
-let RESTART = false
+let MATCH: Match = Match.Stop
+let OLDMATCH: Match = Match.Stop
+let ROLE: Role = Role.Arbiter
 
-let matchHandler: handler   // handling match events
-let playHandler: handler    // handling the play function
-let stopHandler: handler    // handling the stop function
+let resetHandler: handler
+let playHandler: handler
+let pointHandler: handler
+let disallowHandler: handler
+let winnerHandler: handler
+let loserHandler: handler
+let disqualHandler: handler
 
-function setMatchHandling(programmableCode: () => void): void {
-    matchHandler = programmableCode;
-}
-
+//
+// game state machine
+//
 basic.forever(function() {
-    RESTART = false
-    if (inactive()) return
-    if (playHandler) playHandler()
+    switch (MATCH) {
+        case Match.Play:
+            if (playHandler) {
+                if (ROLE == Role.PlayerYellow || ROLE == Role.PlayerBlue)
+                    playHandler()
+            }
+            break
+        case Match.PointYellow:
+            if (pointHandler && (ROLE == Role.GoalYellow))
+                pointHandler()
+            MATCH = Match.Stop
+            if (resetHandler) resetHandler()
+            break
+        case Match.PointBlue:
+            if (pointHandler && (ROLE == Role.GoalBlue))
+                pointHandler()
+            MATCH = Match.Stop
+            if (resetHandler) resetHandler()
+            break
+        case Match.DisallowYellow:
+            if (disallowHandler && (ROLE == Role.GoalYellow))
+                disallowHandler()
+            MATCH = OLDMATCH
+            break
+        case Match.DisallowBlue:
+            if (disallowHandler && (ROLE == Role.GoalBlue))
+                disallowHandler()
+            MATCH = OLDMATCH
+            break
+        case Match.WinnerYellow:
+            if (winnerHandler && (ROLE == Role.PlayerYellow))
+                winnerHandler()
+            if (loserHandler && (ROLE == Role.PlayerBlue))
+                loserHandler()
+            MATCH = Match.Stop
+            if (resetHandler) resetHandler()
+            break
+        case Match.WinnerBlue:
+            if (winnerHandler && (ROLE == Role.PlayerBlue))
+                winnerHandler()
+            if (loserHandler && (ROLE == Role.PlayerYellow))
+                loserHandler()
+            MATCH = Match.Stop
+            if (resetHandler) resetHandler()
+            break
+        case Match.DisqualYellow:
+            if (disqualHandler && (ROLE == Role.PlayerYellow))
+                disqualHandler()
+            MATCH = Match.Stop
+            if (resetHandler) resetHandler()
+            break
+        case Match.DisqualBlue:
+            if (disqualHandler && (ROLE == Role.PlayerBlue))
+                disqualHandler()
+            MATCH = Match.Stop
+            if (resetHandler) resetHandler()
+            break
+    }
+    OLDMATCH = MATCH
 })
 
 function active() : boolean {
-    return (PLAYING && !PAUSE && !RESTART)
+    return (MATCH == Match.Play)
 }
 
 function inactive() : boolean {
-    return (!PLAYING || PAUSE || RESTART)
-}
-
-function startPlaying() {
-    PLAYING = true
-    PAUSE = false
-    RESTART = false
-}
-
-function stopPlaying() {
-    PLAYING = false
-    if (stopHandler) stopHandler()
-}
-
-function setPause() {
-    RESTART = true
-    PAUSE = true
-    if (stopHandler) stopHandler()
-    while (RESTART) basic.pause(1)
-}
-
-function clearPause() {
-    PAUSE = false
-}
-
-function isRestarting() :boolean {
-    return RESTART
+    return (MATCH != Match.Play)
 }
 
 radio.onReceivedNumber(function (match: number) {
     MATCH = match
-    switch (MATCH) {
-        case Match.Start:       PLAYING = true; break;
-        case Match.Stop:
-        case Match.WinnerA:
-        case Match.WinnerB:
-        case Match.DisqualA:
-        case Match.DisqualB:    PLAYING = false;
-                                PAUSE = false;
-                                if (stopHandler) stopHandler()
-                                break;
-    }
-    if (matchHandler) matchHandler()
 })
