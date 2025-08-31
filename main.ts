@@ -30,7 +30,8 @@ enum Role {
 }
 
 enum Match {
-    Stop,
+    Reset,
+    Pause,
     Play,
     PointYellow,
     PointBlue,
@@ -42,17 +43,23 @@ enum Match {
     DisqualBlue
 }
 
-let MATCH: Match = Match.Stop
-let OLDMATCH: Match = Match.Stop
+let MATCH: Match = Match.Reset
+let OLDMATCH: Match = Match.Reset
 let ROLE: Role = Role.Arbiter
 
-let resetHandler: handler
-let playHandler: handler
-let pointHandler: handler
-let disallowHandler: handler
-let winnerHandler: handler
-let loserHandler: handler
-let disqualHandler: handler
+let resetHandler: handler           // resetting the game
+let playHandler: handler            // (re)starts playing
+let pauseHandler: handler           // pauses playing
+let pointYellowHandler: handler     // increase points for yellow
+let pointBlueHandler: handler       // increase points for blue
+let disallowYellowHandler: handler  // decrease points for yellow
+let disallowBlueHandler: handler    // decrease points for blue
+let winnerYellowHandler: handler    // end of game, yellow has won
+let winnerBlueHandler: handler      // end of game, blue has won
+let loserYellowHandler: handler     // end of game, yellow has lost
+let loserBlueHandler: handler       // end of game, blue has lost
+let disqualYellowHandler: handler   // end of game, yellow was disqualified
+let disqualBlueHandler: handler     // end of game, blue was disqualified
 
 basic.forever(function() {
     if ((MATCH == Match.Play) && playHandler)
@@ -62,48 +69,46 @@ basic.forever(function() {
 radio.onReceivedNumber(function (match: number) {
     MATCH = match
     switch (MATCH) {
+        case Match.Reset:
+            if (resetHandler) resetHandler()
+            break
+        // Match.Play is handled by dependent extensions 'if (MATCH != Match.Play) return'
+        // Match.Pause is handled together with the messages below
         case Match.PointYellow:
+            if (pointYellowHandler) pointYellowHandler()
+            if (pauseHandler) pauseHandler()
+            break
         case Match.PointBlue:
-            if (ROLE == Role.Arbiter) {
-                if (pointHandler) pointHandler()
-            }
-            else {
-                if (resetHandler) resetHandler()
-            }
+            if (pointBlueHandler) pointBlueHandler()
+            if (pauseHandler) pauseHandler()
             break
         case Match.DisallowYellow:
-            if (disallowHandler && (ROLE == Role.GoalYellow))
-                disallowHandler()
+            if (disallowYellowHandler) disallowYellowHandler()
             MATCH = OLDMATCH
             break
         case Match.DisallowBlue:
-            if (disallowHandler && (ROLE == Role.GoalBlue))
-                disallowHandler()
+            if (disallowBlueHandler) disallowBlueHandler()
             MATCH = OLDMATCH
             break
         case Match.WinnerYellow:
-            if (winnerHandler && (ROLE == Role.PlayerYellow))
-                winnerHandler()
-            if (loserHandler && (ROLE == Role.PlayerBlue))
-                loserHandler()
-            if (resetHandler) resetHandler()
+            if (winnerYellowHandler) winnerYellowHandler()
+            if (loserBlueHandler) loserBlueHandler()
+            if (pauseHandler) pauseHandler()
             break
         case Match.WinnerBlue:
-            if (winnerHandler && (ROLE == Role.PlayerBlue))
-                winnerHandler()
-            if (loserHandler && (ROLE == Role.PlayerYellow))
-                loserHandler()
-            if (resetHandler) resetHandler()
+            if (winnerBlueHandler) winnerBlueHandler()
+            if (loserYellowHandler) loserYellowHandler()
+            if (pauseHandler) pauseHandler()
             break
         case Match.DisqualYellow:
-            if (disqualHandler && (ROLE == Role.PlayerYellow))
-                disqualHandler()
-            if (resetHandler) resetHandler()
+            if (disqualYellowHandler) disqualYellowHandler()
+            if (winnerBlueHandler) winnerBlueHandler()
+            if (pauseHandler) pauseHandler()
             break
         case Match.DisqualBlue:
-            if (disqualHandler && (ROLE == Role.PlayerBlue))
-                disqualHandler()
-            if (resetHandler) resetHandler()
+            if (disqualBlueHandler) disqualBlueHandler()
+            if (winnerYellowHandler) winnerYellowHandler()
+            if (pauseHandler) pauseHandler()
             break
     }
     OLDMATCH = MATCH
