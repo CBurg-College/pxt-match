@@ -72,8 +72,11 @@ radio.onReceivedNumber(function (match: number) {
         case Match.Reset:
             if (resetHandler) resetHandler()
             break
-        // Match.Play is handled by dependent extensions 'if (MATCH != Match.Play) return'
-        // Match.Pause is handled together with the messages below
+        // Match.Play should be handled by dependent extensions:
+        //       'if (MATCH != Match.Play) return'
+        case Match.Pause:
+            if (pauseHandler) pauseHandler()
+            break
         case Match.PointYellow:
             if (pointYellowHandler) pointYellowHandler()
             if (pauseHandler) pauseHandler()
